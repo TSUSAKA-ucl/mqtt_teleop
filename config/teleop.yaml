@@ -1,0 +1,47 @@
+# 値は全て既定値。arm は launch 引数で与える。
+/**:
+  ros__parameters:
+    # --- MQTT -------------------------------------------------------------
+    broker_uri: "wss://localhost:8333"   # tcp:// ssl:// ws:// wss:// (将来クラウド/VPN でも変更のみで対応)
+    # robot_type / robot_uuid / ca_certs_path は空なら環境変数 ROBOT_TYPE / ROBOT_UUID / CA_CERTS_PATH
+    mode: "local"
+    liu: false
+
+    # --- ROS 2 ------------------------------------------------------------
+    feedback_topic: "feedback/joint_states"
+    control_topic: "control/move_js"
+    joint_names: ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
+    gripper_name: "gripper"
+
+    # --- oversample + LPF ---------------------------------------------------
+    output_rate_hz: 200.0        # agx_arm_ctrl の pub_rate(200) に合わせた値。500-1000 も可
+    filter_cutoff_hz: 15.0       # 2次ベッセル -3dB。遅延≒1.36/(2π fc)。下げるほど60Hzが落ち遅延が増える
+    reference_atten_hz: 60.0     # 起動ログに減衰量を表示する周波数
+
+    # --- gripper (MQTT tool値 -> 幅[m]) ------------------------------------
+    use_gripper: true
+    gripper_scale: 0.00085       # 旧: finger_pos[mm] = tool*0.85 + 0.4
+    gripper_offset: 0.0004
+    gripper_max_width: 0.1
+    gripper_effort: 1.0          # N (0.5-3.0)
+
+    # --- FSM -----------------------------------------------------------------
+    equal_threshold: 0.01        # [rad] acquired -> running (全関節)
+    equal_hold_s: 0.1            # 上記が連続して成立する時間
+    stop_threshold: 0.10         # [rad] running -> stopping (目標=フィルタ出力 と 実関節の差)
+    stop_threshold_hold_s: 0.05
+    mqtt_timeout_s: 0.2          # MQTT目標が途絶したら stopping (0で無効)
+    feedback_timeout_s: 0.2
+    stop_vel_threshold: 0.05     # [rad/s] stopping -> acquired
+    stop_converge_eps: 0.001     # [rad] フィルタ出力が固定入力に収束したとみなす幅
+    stop_hold_s: 0.2
+    stop_timeout_s: 5.0
+
+    # --- 保護 ------------------------------------------------------------------
+    max_joint_speed: 3.0         # [rad/s] 出力の速度クランプ (0で無効)
+    joint_lower: []              # 6要素。空なら無効 (agx_arm_ctrl 側でも範囲外は拒否される)
+    joint_upper: []
+
+    # --- その他 -----------------------------------------------------------------
+    state_pub_rate_hz: 10.0      # acquired 中に実関節角を MQTT へ publish する周波数
+    rt_priority: 0               # >0 で制御スレッドを SCHED_FIFO に (要 rtprio 権限)
