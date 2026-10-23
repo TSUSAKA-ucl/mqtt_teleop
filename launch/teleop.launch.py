@@ -14,7 +14,7 @@ def generate_launch_description():
         DeclareLaunchArgument('arm', default_value='right', description='right | left'),
         DeclareLaunchArgument('namespace', default_value='',
                               description='agx_arm_ctrl の namespace (左右2台なら right / left など)'),
-        DeclareLaunchArgument('broker_uri', default_value='wss://localhost:8333'),
+        DeclareLaunchArgument('broker_uri', default_value='wss://127.0.0.1:8333'),
         DeclareLaunchArgument('liu', default_value='false'),
         Node(
             package='mqtt_teleop',

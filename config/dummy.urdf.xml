@@ -1,0 +1,21 @@
+<?xml version='1.0'?>
+<robot name='6R-dummy'>
+  <joint name='joint1' type='revolute'>
+    <limit lower='0.0' upper='1.0'/>
+  </joint>
+  <joint name='joint2' type='revolute'>
+    <limit lower='0.0' upper='1.0'/>
+  </joint>
+  <joint name='joint3' type='revolute'>
+    <limit lower='0.0' upper='1.0'/>
+  </joint>
+  <joint name='joint4' type='revolute'>
+    <limit lower='0.0' upper='1.0'/>
+  </joint>
+  <joint name='joint5' type='revolute'>
+    <limit lower='0.0' upper='1.0'/>
+  </joint>
+  <joint name='joint6' type='revolute'>
+    <limit lower='0.0' upper='1.0'/>
+  </joint>
+</robot>

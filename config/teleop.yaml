@@ -2,7 +2,7 @@
 /**:
   ros__parameters:
     # --- MQTT -------------------------------------------------------------
-    broker_uri: "wss://localhost:8333"   # tcp:// ssl:// ws:// wss:// (将来クラウド/VPN でも変更のみで対応)
+    broker_uri: "wss://127.0.0.1:8333"   # tcp:// ssl:// ws:// wss:// (将来クラウド/VPN でも変更のみで対応)
     # robot_type / robot_uuid / ca_certs_path は空なら環境変数 ROBOT_TYPE / ROBOT_UUID / CA_CERTS_PATH
     mode: "local"
     liu: false
@@ -30,7 +30,7 @@
     equal_hold_s: 0.1            # 上記が連続して成立する時間
     stop_threshold: 0.10         # [rad] running -> stopping (目標=フィルタ出力 と 実関節の差)
     stop_threshold_hold_s: 0.05
-    mqtt_timeout_s: 0.2          # MQTT目標が途絶したら stopping (0で無効)
+    mqtt_timeout_s: 1.0          # MQTT目標が途絶したら stopping (0で無効)
     feedback_timeout_s: 0.2
     stop_vel_threshold: 0.05     # [rad/s] stopping -> acquired
     stop_converge_eps: 0.001     # [rad] フィルタ出力が固定入力に収束したとみなす幅
@@ -39,8 +39,8 @@
 
     # --- 保護 ------------------------------------------------------------------
     max_joint_speed: 3.0         # [rad/s] 出力の速度クランプ (0で無効)
-    joint_lower: []              # 6要素。空なら無効 (agx_arm_ctrl 側でも範囲外は拒否される)
-    joint_upper: []
+    joint_lower: [-3.14,-3.14,-3.14,-3.14,-3.14,-3.14]              # 6要素。空なら無効 (agx_arm_ctrl 側でも範囲外は拒否される)
+    joint_upper: [3.14,3.14,3.14,3.14,3.14,3.14]
 
     # --- その他 -----------------------------------------------------------------
     state_pub_rate_hz: 10.0      # acquired 中に実関節角を MQTT へ publish する周波数

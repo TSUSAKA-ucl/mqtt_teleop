@@ -166,7 +166,7 @@ private:
   // ================================================================ params
   void load_params()
   {
-    auto S = [this](const char * n, const std::string & d) {return declare_parameter<std::string>(n, d);};
+    auto S = [this](const char * n, const std::string & d) -> std::string {return declare_parameter<std::string>(n, d);};
     auto D = [this](const char * n, double d) {return declare_parameter<double>(n, d);};
     auto B = [this](const char * n, bool d) {return declare_parameter<bool>(n, d);};
 
@@ -177,6 +177,7 @@ private:
     p_.liu = B("liu", false);
     p_.mode = S("mode", "local");
     p_.broker_uri = S("broker_uri", env_or("MQTT_URI", "wss://localhost:8333"));
+    RCLCPP_INFO(get_logger(), "BROKER_URI: %s",p_.broker_uri.c_str());
     const bool right = p_.arm == "right";
     p_.robot_type = S("robot_type", "");
     if (p_.robot_type.empty()) {p_.robot_type = env_or("ROBOT_TYPE", right ? "piper_right" : "piper_left");}
@@ -253,6 +254,7 @@ private:
 
   void on_feedback(const sensor_msgs::msg::JointState & m)
   {
+    RCLCPP_DEBUG(get_logger(), "feedback: %zu joints, %zu vel", m.name.size(), m.velocity.size());
     Feedback f;
     std::array<bool, kNJ> got{};
     constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();

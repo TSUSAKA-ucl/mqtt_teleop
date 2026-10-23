@@ -3,15 +3,49 @@
 MQTT で受信した目標ジョイント角を **ZOH で oversample → 2次ベッセル LPF → `/control/move_js`** に変換する
 ROS 2 (Humble) ノード。`MQTT_teleoperation_rl.py` / `MQTT_Client.py` の C++ 版。
 
-## ビルド
+## ビルド Build
 
-```bash
-sudo apt install libpaho-mqtt-dev libpaho-mqttpp-dev nlohmann-json3-dev libssl-dev
-cd ~/ws/src && cp -r /path/to/mqtt_teleop .
-cd ~/ws && colcon build --packages-select mqtt_teleop
-```
+1. Create a ROS 2 workspace (if not already created):
+   ```bash
+   mkdir -p ~/ros2_ws/src
+   cd ~/ros2_ws/src
+2. Clone the repository into the `src` directory:
+   ```bash
+   git clone https://github.com/TSUSAKA-ucl/mqtt_teleop.git
+   ```
+3. Install dependencies:
+   ```
+   rosdep install --from-paths src --ignore-src -r -y
+   ```
+   or manually install the required packages:
+   ```
+   sudo apt install libpaho-mqtt-dev libpaho-mqttpp-dev nlohmann-json3-dev libssl-dev
+   ```
+4. Build the workspace:
+   ```bash
+   cd ~/ros2_ws
+   colcon build --packages-select mqtt_teleop
+   ```
+   If you want to make a compile_commands.json for your IDE, you can use the following command:
+   ```bash
+   colcon build --packages-select mqtt_teleop --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+   ln -s build/compile_commands.json .
+   ```
+## テスト
+0. `mkcert` で作った、`rootCA.pem`とmqtt brokerおよびNext.js devサーバー用の証明書を、それぞれ`~/.local/share/mkcert/`と`~/.local/share/ssl/`に置く。`rootCA.pem` は `CA_CERTS_PATH` 環境変数で指定する。
+1. [`./Docker/up.sh`](https://github.com/TSUSAKA-ucl/MetaworkMQTT/blob/dev-wss/Docker/up.sh) in [`MetaworkMQTT`](https://github.com/TSUSAKA-ucl/MetaworkMQTT). (MQTT broker + MetaworkMQTT manager)
+2. [`pnpm dev-mkcert`](https://github.com/TSUSAKA-ucl/piper-metawork/blob/main/package.json) in [`piper-metawork`](https://github.com/TSUSAKA-ucl/piper-metawork) (Next.js dev server)
+3. Launch this ROS 2 node:
+   ```
+   source ~/ros2_ws/install/setup.bash
+   source ~/ros2_ws/install/mqtt_teleop/share/mqtt_teleop/config/environment.bash
+   ros2 launch mqtt_teleop teleop-test.launch.py
+   ```
+4. Access `https://localhost:3000` in your browser. You should see a WebXR PiPER demo page
 
-## 実行
+
+以下未テスト
+## 実行 
 
 ```bash
 # agx_arm_ctrl を起動済みであること(CAN有効化済み)
