@@ -28,7 +28,7 @@
     # --- FSM -----------------------------------------------------------------
     equal_threshold: 0.01        # [rad] acquired -> running (全関節)
     equal_hold_s: 0.1            # 上記が連続して成立する時間
-    stop_threshold: 0.10         # [rad] running -> stopping (目標=フィルタ出力 と 実関節の差)
+    stop_threshold: 1.0         # [rad] running -> stopping (目標=フィルタ出力 と 実関節の差)
     stop_threshold_hold_s: 0.05
     mqtt_timeout_s: 1.0          # MQTT目標が途絶したら stopping (0で無効)
     feedback_timeout_s: 0.2

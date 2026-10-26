@@ -43,8 +43,34 @@ ROS 2 (Humble) ノード。`MQTT_teleoperation_rl.py` / `MQTT_Client.py` の C++
    ```
 4. Access `https://localhost:3000` in your browser. You should see a WebXR PiPER demo page
 
+## アーム動作テスト
+0. 以下、broker, devサーバーは192.168.207.145とし、SANの入ったcertとkeyを持っているとする。clientはそれを認証するrootCAのcertを持っているとする
+1. broker, MetaworkMQTT manager
+   ```
+   ./MetaworkMQTT/Docker/up.sh
+   ```
+2. Next.js devサーバー
+   ```
+   cd piper-metawork
+   ./localcerts/copy-certs.sh
+   pnpm dev-mkcert
+   ```
+3. piper power-on (エッジサーバー上で)
+   ```
+   ./v2_both.sh reset 
+   ./v2_both.sh enable 
+   ./v2_both.sh go_zero
+   ```
+4. `agx_arm_ctrl_node`
+   ```
+   PYTHONPATH=$VIRTUAL_ENV/lib/python3.10/site-packages:$PYTHONPATH ros2 launch agx_arm_ctrl start_single_agx_arm.launch.py can_port:=can_piper_r4e31  arm_type:=piper
+   ```
+5. `mqtt_teleop_node`
+   ```
+   ros2 launch mqtt_teleop teleop.launch.py broker_uri:=wss://192.168.207.145:8333
+   ```
+6. ブラウザーで`https://192.168.207.145:3000`にアクセス
 
-以下未テスト
 ## 実行 
 
 ```bash
