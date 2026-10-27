@@ -7,7 +7,6 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
-
 def generate_launch_description():
     cfg = os.path.join(get_package_share_directory('mqtt_teleop'), 'config', 'teleop.yaml')
     return LaunchDescription([

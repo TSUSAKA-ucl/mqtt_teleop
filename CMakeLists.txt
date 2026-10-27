@@ -12,6 +12,8 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(PahoMqttCpp REQUIRED)   # apt: libpaho-mqttpp-dev libpaho-mqtt-dev
+# for venv_util.py
+find_package(ament_cmake_python REQUIRED)
 
 add_executable(teleop_node src/teleop_node.cpp src/MQTT_Client.cpp)
 target_include_directories(teleop_node PRIVATE
@@ -21,5 +23,10 @@ target_link_libraries(teleop_node nlohmann_json::nlohmann_json PahoMqttCpp::paho
 
 install(TARGETS teleop_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
+ament_python_install_package(${PROJECT_NAME})
+install(PROGRAMS
+	scripts/piper_v2_cmd.py scripts/v2_both.sh
+	scripts/piper_metawork.sh
+	DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

@@ -53,25 +53,26 @@ ROS 2 (Humble) ノード。`MQTT_teleoperation_rl.py` / `MQTT_Client.py` の C++
    ```
    cd piper-metawork
    ./localcerts/copy-certs.sh
+   source ./setup-env.sh # for cross origin
    pnpm dev-mkcert
    ```
 3. piper power-on (エッジサーバー上で)
    ```
-   ./v2_both.sh reset 
-   ./v2_both.sh enable 
-   ./v2_both.sh go_zero
+   ros2 run mqtt_teleop v2_both.sh reset 
+   ros2 run mqtt_teleop v2_both.sh enable 
+   ros2 run mqtt_teleop v2_both.sh go_zero
    ```
-4. `agx_arm_ctrl_node`
+4. launch `agx_arm_ctrl_node` and `mqtt_teleop_node` by `teleop_agx_arm.launch.py`
    ```
-   PYTHONPATH=$VIRTUAL_ENV/lib/python3.10/site-packages:$PYTHONPATH ros2 launch agx_arm_ctrl start_single_agx_arm.launch.py can_port:=can_piper_r4e31  arm_type:=piper
-   ```
-5. `mqtt_teleop_node`
-   ```
-   ros2 launch mqtt_teleop teleop.launch.py broker_uri:=wss://192.168.207.145:8333
+   export MQTT_URI=wss://XXX.XXX.XXX.XXX:8333 # if URI is different from default(wss://192.168.207.145:8333)
+   export CAN_PORT=can0 # if CAN port is different from default(can_piper_r4e31)
+   ros2 run mqtt_teleop piper_metawork.sh
    ```
 6. ブラウザーで`https://192.168.207.145:3000`にアクセス
 
-## 実行 
+
+
+## 実行 以下未修正
 
 ```bash
 # agx_arm_ctrl を起動済みであること(CAN有効化済み)

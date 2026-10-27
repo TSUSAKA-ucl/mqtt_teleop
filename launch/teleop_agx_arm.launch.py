@@ -5,11 +5,16 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from mqtt_teleop.venv_utils import get_venv_pythonpath_if_has_pyagxarm
 
 
 def generate_launch_description():
+    node_env = os.environ.copy()
+    node_env['PYTHONPATH'] = get_venv_pythonpath_if_has_pyagxarm()
+
     # 1. 呼び出す各パッケージのlaunchファイルパスを取得
-    agx_arm_ctrl_dir = get_package_share_directory('agx_arm_ctrl')
+    # agx_arm_ctrl_dir = get_package_share_directory('agx_arm_ctrl')
+    agx_arm_ctrl_dir = get_package_share_directory('mqtt_teleop')
     mqtt_teleop_dir = get_package_share_directory('mqtt_teleop')
 
     start_single_agx_arm_launch = os.path.join(
