@@ -74,6 +74,7 @@ struct Params
   std::string mode{"local"};
   std::string broker_uri, robot_type, robot_uuid, ca_certs_path;
   std::string feedback_topic, control_topic;
+  std::string mqtt_recv_topic{"mqtt_recv/joint_states"};
   std::vector<std::string> joint_names;
   std::string gripper_name;
 
@@ -116,6 +117,7 @@ public:
 
     // ---- ROS ----
     cmd_pub_ = create_publisher<sensor_msgs::msg::JointState>(p_.control_topic, rclcpp::QoS(1).reliable());
+    mqtt_recv_pub_ = create_publisher<sensor_msgs::msg::JointState>(p_.mqtt_recv_topic, rclcpp::QoS(1).reliable());
     fb_sub_ = create_subscription<sensor_msgs::msg::JointState>(
       p_.feedback_topic, rclcpp::SensorDataQoS(),
       [this](sensor_msgs::msg::JointState::SharedPtr m) {on_feedback(*m);});
@@ -341,14 +343,27 @@ private:
 
   void tick()
   {
-    const TP now = Clock::now();
+    const TP chrono_now = Clock::now();
     const EdgeState st = mqtt_->get_state();
+    const auto ros_now = now();
     switch (st) {
-      case EdgeState::ACQUIRED: tick_acquired(now); break;
-      case EdgeState::RUNNING: tick_running(now); break;
-      case EdgeState::STOPPING: tick_stopping(now); break;
+      case EdgeState::ACQUIRED: tick_acquired(chrono_now); break;
+      case EdgeState::RUNNING: tick_running(chrono_now); break;
+      case EdgeState::STOPPING: tick_stopping(chrono_now); break;
       case EdgeState::EXITING: finished_ = true; break;
       default: break;  // まだ acquire されていない
+    }
+    // get_pose()のTeleopPose構造体のjoint_stampを見てjoint_stamp_prev_より
+    // 進んでいたら、新しくメッセージを受信したとしてデバッグ用にそのメッセージを
+    // ros2でpublishする
+    const TeleopPose tgt = mqtt_->get_pose();
+    if (tgt.joint_valid && tgt.joint_stamp > joint_stamp_prev_) {
+      joint_stamp_prev_ = tgt.joint_stamp;
+      sensor_msgs::msg::JointState msg{};
+      msg.header.stamp = ros_now;
+      msg.name = p_.joint_names;
+      msg.position.assign(tgt.joint.begin(), tgt.joint.end());
+      mqtt_recv_pub_->publish(msg);
     }
     if (exit_requested_) {
       // RUNNING/STOPPING 中は soft stop 完了後に tick_stopping() が EXITING にする
@@ -562,6 +577,7 @@ private:
 
   std::unique_ptr<MQTT_Client> mqtt_;
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr cmd_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mqtt_recv_pub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr fb_sub_;
   rclcpp::TimerBase::SharedPtr state_timer_;
   sensor_msgs::msg::JointState cmd_arm_, cmd_full_;
@@ -579,6 +595,7 @@ private:
   std::thread control_thread_;
   std::atomic<bool> exit_requested_{false};
   std::atomic<bool> finished_{false};
+  TeleopPose::Clock::time_point joint_stamp_prev_{TeleopPose::Clock::time_point::min()};
 };
 
 }  // namespace mqtt_teleop

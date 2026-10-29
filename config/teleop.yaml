@@ -14,9 +14,9 @@
     gripper_name: "gripper"
 
     # --- oversample + LPF ---------------------------------------------------
-    output_rate_hz: 200.0        # agx_arm_ctrl の pub_rate(200) に合わせた値。500-1000 も可
-    filter_cutoff_hz: 15.0       # 2次ベッセル -3dB。遅延≒1.36/(2π fc)。下げるほど60Hzが落ち遅延が増える
-    reference_atten_hz: 60.0     # 起動ログに減衰量を表示する周波数
+    output_rate_hz: 50.0        # agx_arm_ctrl の pub_rate(200) に合わせた値。500-1000 も可
+    filter_cutoff_hz: 5.0       # 2次ベッセル -3dB。遅延≒1.36/(2π fc)。下げるほど60Hzが落ち遅延が増える
+    reference_atten_hz: 10.0     # 起動ログに減衰量を表示する周波数
 
     # --- gripper (MQTT tool値 -> 幅[m]) ------------------------------------
     use_gripper: true
