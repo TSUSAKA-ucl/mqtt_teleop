@@ -34,6 +34,7 @@
 #include "mqtt_teleop/MQTT_Client.hpp"
 #include "mqtt_teleop/edge_state.hpp"
 #include "mqtt_teleop/lowpass_filter.hpp"
+#include "mqtt_teleop/msg/metawork_control.hpp"
 
 using json = nlohmann::json;
 using namespace std::chrono_literals;
@@ -117,7 +118,7 @@ public:
 
     // ---- ROS ----
     cmd_pub_ = create_publisher<sensor_msgs::msg::JointState>(p_.control_topic, rclcpp::QoS(1).reliable());
-    mqtt_recv_pub_ = create_publisher<sensor_msgs::msg::JointState>(p_.mqtt_recv_topic, rclcpp::QoS(1).reliable());
+    mqtt_recv_pub_ = create_publisher<mqtt_teleop::msg::MetaworkControl>(p_.mqtt_recv_topic, rclcpp::QoS(1).reliable());
     fb_sub_ = create_subscription<sensor_msgs::msg::JointState>(
       p_.feedback_topic, rclcpp::SensorDataQoS(),
       [this](sensor_msgs::msg::JointState::SharedPtr m) {on_feedback(*m);});
@@ -353,16 +354,16 @@ private:
       case EdgeState::EXITING: finished_ = true; break;
       default: break;  // まだ acquire されていない
     }
-    // get_pose()のTeleopPose構造体のjoint_stampを見てjoint_stamp_prev_より
+    // get_pose()のTeleopPose構造体のjoint.monotonicを見てmonotonic_stamp_prev_より
     // 進んでいたら、新しくメッセージを受信したとしてデバッグ用にそのメッセージを
     // ros2でpublishする
     const TeleopPose tgt = mqtt_->get_pose();
-    if (tgt.joint_valid && tgt.joint_stamp > joint_stamp_prev_) {
-      joint_stamp_prev_ = tgt.joint_stamp;
-      sensor_msgs::msg::JointState msg{};
-      msg.header.stamp = ros_now;
-      msg.name = p_.joint_names;
-      msg.position.assign(tgt.joint.begin(), tgt.joint.end());
+    if (tgt.joint.valid && tgt.joint.stamp.monotonic > monotonic_stamp_prev_) {
+      monotonic_stamp_prev_ = tgt.joint.stamp.monotonic;
+      mqtt_teleop::msg::MetaworkControl msg{};
+      msg.header.stamp.sec = static_cast<int32_t>(tgt.joint.stamp.mqtt_sec.count());
+      msg.header.stamp.nanosec = static_cast<uint32_t>(tgt.joint.stamp.mqtt_nsec.count());
+      msg.data.assign(tgt.joint.data.begin(), tgt.joint.data.end());
       mqtt_recv_pub_->publish(msg);
     }
     if (exit_requested_) {
@@ -379,15 +380,15 @@ private:
   Vec7 to_ros_domain(const TeleopPose & t) const
   {
     Vec7 v{};
-    for (size_t i = 0; i < kNJ; ++i) {v[i] = t.joint[i];}
-    v[kG] = t.tool * p_.gripper_scale + p_.gripper_offset;  // m
+    for (size_t i = 0; i < kNJ; ++i) {v[i] = t.joint.data[i];}
+    v[kG] = t.tool.data[0] * p_.gripper_scale + p_.gripper_offset;  // m
     return v;
   }
 
   static bool finite_pose(const TeleopPose & t, bool use_gripper)
   {
-    for (double x : t.joint) {if (!std::isfinite(x)) {return false;}}
-    return !(use_gripper && t.tool_valid && !std::isfinite(t.tool));
+    for (double x : t.joint.data) {if (!std::isfinite(x)) {return false;}}
+    return !(use_gripper && t.tool.valid && !std::isfinite(t.tool.data[0]));
   }
 
   Vec7 step(const Vec7 & in, bool use_gripper)
@@ -427,12 +428,12 @@ private:
     const Feedback fb = get_feedback();
     const TeleopPose tgt = mqtt_->get_pose();
 
-    bool ok = fb.valid && age_s(fb.stamp, now) < p_.feedback_timeout_s && tgt.joint_valid &&
+    bool ok = fb.valid && age_s(fb.stamp, now) < p_.feedback_timeout_s && tgt.joint.valid &&
       finite_pose(tgt, false);
-    if (ok && p_.mqtt_timeout_s > 0.0) {ok = age_s(tgt.joint_stamp, now) < p_.mqtt_timeout_s;}
+    if (ok && p_.mqtt_timeout_s > 0.0) {ok = age_s(tgt.joint.stamp.monotonic, now) < p_.mqtt_timeout_s;}
     bool equal = ok;
     for (size_t i = 0; equal && i < kNJ; ++i) {
-      equal = std::fabs(tgt.joint[i] - fb.pos[i]) < p_.equal_threshold;
+      equal = std::fabs(tgt.joint.data[i] - fb.pos[i]) < p_.equal_threshold;
     }
     if (!equal) {equal_since_.reset(); return;}
     if (!equal_since_) {equal_since_ = now;}
@@ -469,9 +470,9 @@ private:
       reason = "exit requested";
     } else if (mqtt_->consume_acquire_request()) {
       reason = "re-acquired (dev/<robot-id> received)";
-    } else if (!tgt.joint_valid || !finite_pose(tgt, p_.use_gripper)) {
+    } else if (!tgt.joint.valid || !finite_pose(tgt, p_.use_gripper)) {
       reason = "invalid target (NaN/Inf)";
-    } else if (p_.mqtt_timeout_s > 0.0 && age_s(tgt.joint_stamp, now) > p_.mqtt_timeout_s) {
+    } else if (p_.mqtt_timeout_s > 0.0 && age_s(tgt.joint.stamp.monotonic, now) > p_.mqtt_timeout_s) {
       reason = "MQTT target timeout";
     } else if (!fb.valid || age_s(fb.stamp, now) > p_.feedback_timeout_s) {
       reason = "feedback timeout";
@@ -484,7 +485,7 @@ private:
 
     // ZOH: 最新の MQTT 目標をそのまま保持して oversample
     Vec7 in = to_ros_domain(tgt);
-    const bool use_gripper = p_.use_gripper && tgt.tool_valid;
+    const bool use_gripper = p_.use_gripper && tgt.tool.valid;
     if (use_gripper && !gripper_active_) {
       filters_[kG].reset(fb.has_gripper ? fb.gripper : in[kG]);
       last_out_[kG] = fb.has_gripper ? fb.gripper : in[kG];
@@ -577,7 +578,7 @@ private:
 
   std::unique_ptr<MQTT_Client> mqtt_;
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr cmd_pub_;
-  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mqtt_recv_pub_;
+  rclcpp::Publisher<mqtt_teleop::msg::MetaworkControl>::SharedPtr mqtt_recv_pub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr fb_sub_;
   rclcpp::TimerBase::SharedPtr state_timer_;
   sensor_msgs::msg::JointState cmd_arm_, cmd_full_;
@@ -595,7 +596,7 @@ private:
   std::thread control_thread_;
   std::atomic<bool> exit_requested_{false};
   std::atomic<bool> finished_{false};
-  TeleopPose::Clock::time_point joint_stamp_prev_{TeleopPose::Clock::time_point::min()};
+  TeleopStamp::Clock::time_point monotonic_stamp_prev_{TeleopStamp::Clock::time_point::min()};
 };
 
 }  // namespace mqtt_teleop

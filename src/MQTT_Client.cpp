@@ -1,5 +1,6 @@
 #include "mqtt_teleop/MQTT_Client.hpp"
 
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <ctime>
@@ -33,6 +34,9 @@ bool starts_with(const std::string & s, const std::string & p)
   return s.size() >= p.size() && s.compare(0, p.size(), p) == 0;
 }
 }  // namespace
+
+
+
 
 MQTT_Client::MQTT_Client(const std::string & arm, const std::string & mode, const MqttArgs & args)
 : ROBOT_TYPE(args.robot_type),
@@ -237,6 +241,16 @@ void MQTT_Client::on_acquire_topic(const std::string & payload)
 // -------------------------------------------------------------- message --
 void MQTT_Client::on_message(const std::string & topic, const std::string & payload)
 {
+  auto recv_now = std::chrono::system_clock::now();
+  auto from_epoch = recv_now.time_since_epoch();
+  auto SetStamp = [from_epoch](TeleopStamp & stamp, double payload_stamp) {
+    stamp.monotonic = TeleopStamp::Clock::now();
+    stamp.payload = payload_stamp;
+    stamp.mqtt_sec = std::chrono::duration_cast<std::chrono::seconds>(from_epoch);
+    stamp.mqtt_nsec =
+	std::chrono::duration_cast<std::chrono::nanoseconds>(from_epoch - stamp.mqtt_sec);
+  };
+
   std::string jt, tt;
   {
     std::lock_guard<std::mutex> g(lock_);
@@ -253,18 +267,20 @@ void MQTT_Client::on_message(const std::string & topic, const std::string & payl
       for (size_t i = 0; i < 6; ++i) {
         th[i] = joints[i].is_number() ? joints[i].get<double>() : kNaN;  // NaN は FSM が検出
       }
+      const auto payload_stamp = js.value("stamp", 0.0);
       std::lock_guard<std::mutex> g(lock_);
-      pose_.joint = th;
-      pose_.joint_stamp = TeleopPose::Clock::now();
-      pose_.joint_valid = true;
+      pose_.joint.data = th;
+      pose_.joint.valid = true;
+      SetStamp(pose_.joint.stamp, payload_stamp);
     } else if (!tt.empty() && topic == tt) {
       const json js = json::parse(payload);
       const auto & v = js.at("tool");
       const double tool = v.is_number() ? v.get<double>() : kNaN;
+      const auto payload_stamp = js.value("stamp", 0.0);
       std::lock_guard<std::mutex> g(lock_);
-      pose_.tool = tool;
-      pose_.tool_stamp = TeleopPose::Clock::now();
-      pose_.tool_valid = true;
+      pose_.tool.data.at(0) = tool;
+      pose_.tool.valid = true;
+      SetStamp(pose_.tool.stamp, payload_stamp);
     } else {
       std::cout << "not subscribe msg " << topic << std::endl;
     }

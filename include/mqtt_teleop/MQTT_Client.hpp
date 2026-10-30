@@ -41,15 +41,25 @@ struct MqttArgs
 };
 
 // Python 版 self.pose[8:14] / self.pose[15] に相当。「6関節 + ツール1」に整理。
-struct TeleopPose
+// template <typename T> struct TeleopData
+struct TeleopStamp
 {
   using Clock = std::chrono::steady_clock;
-  std::array<double, 6> joint{};
-  double tool{0.0};
-  bool joint_valid{false};
-  bool tool_valid{false};
-  Clock::time_point joint_stamp{};  // 最後に joint を受信した時刻
-  Clock::time_point tool_stamp{};
+  Clock::time_point monotonic{};
+  std::chrono::seconds mqtt_sec{};
+  std::chrono::nanoseconds mqtt_nsec{};
+  double payload{};
+};
+template <size_t N> struct TeleopData
+{
+  std::array<double, N> data{};
+  bool valid{false};
+  TeleopStamp stamp{};
+};
+struct TeleopPose
+{
+  TeleopData<6> joint{};
+  TeleopData<1> tool{};
 };
 
 class MQTT_Client : public mqtt::callback

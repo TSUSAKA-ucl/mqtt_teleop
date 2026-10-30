@@ -11,7 +11,7 @@ from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 import os
-from mqtt_teleop.venv_utils import get_venv_pythonpath_if_has_pyagxarm
+from venv_utils.venv_utils import get_venv_pythonpath_if_has_pyagxarm
 
 os.environ["RCUTILS_COLORIZED_OUTPUT"] = "1"
 
