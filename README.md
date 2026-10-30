@@ -58,32 +58,35 @@ ROS 2 (Humble) ノード。`MQTT_teleoperation_rl.py` / `MQTT_Client.py` の C++
    ```
 3. piper power-on (エッジサーバー上で)
    ```
+   source ~/ros2_ws/install/setup.bash
    ros2 run mqtt_teleop v2_both.sh reset 
    ros2 run mqtt_teleop v2_both.sh enable 
    ros2 run mqtt_teleop v2_both.sh go_zero
    ```
-4. launch `agx_arm_ctrl_node` and `mqtt_teleop_node` by `teleop_agx_arm.launch.py`
+4. 起動  
+   launch `agx_arm_ctrl_node` and `mqtt_teleop_node` by `teleop_agx_arm.launch.py`  
+   環境変数設定(`CA_CERTS_PATH`, `ROBOT_TYPE`, `ROBOT_UUID`)
    ```
-   export MQTT_URI=wss://XXX.XXX.XXX.XXX:8333 # if URI is different from default(wss://192.168.207.145:8333)
-   export CAN_PORT=can0 # if CAN port is different from default(can_piper_r4e31)
-   ros2 run mqtt_teleop piper_metawork.sh
+   source ~/ros2_ws/src/mqtt_teleop/config/environment.bash
    ```
-6. ブラウザーで`https://192.168.207.145:3000`にアクセス
+   launching
+   ```
+   ros2 launch mqtt_teleop teleop_agx_arm.launch.py  can_port:=can_piper_r4e31  arm_type:=piper  broker_uri:=wss://192.168.207.145:8333
+   ```
+   `can_port`と`broker_uri`は環境に合わせて変更する。`broker_uri` は
+   `tcp:// ssl:// ws:// wss://` のどれでも対応可能　　
+   全パラメータは `config/teleop.yaml` に既定値つきで記載済
+6. 操作  
+   ブラウザーで`https://192.168.207.145:3000`にアクセス　　
+   WebXRコントローラーで操作
 
-
-
-## 実行 以下未修正
-
-```bash
-# agx_arm_ctrl を起動済みであること(CAN有効化済み)
-export CA_CERTS_PATH=/path/to/rootCA.pem          # wss/ssl のとき
-ros2 launch mqtt_teleop teleop.launch.py arm:=right broker_uri:=wss://localhost:8333
-# 左右2台: namespace:=right / namespace:=left (agx_arm_ctrl 側と揃える)
-ros2 param set /mqtt_teleop filter_cutoff_hz 20.0    # ※フィルタ係数は起動時に計算 -> 変更は再起動で反映
-```
-
-`broker_uri` は `tcp:// ssl:// ws:// wss://` のどれでも可(将来クラウド/VPN になっても設定変更のみ)。
-全パラメータは `config/teleop.yaml` に既定値つきで記載。
+7. 停止  
+   1. 安全な姿勢に移動
+   2. `teleop_agx_arm.launch.py`をCtrl+Cで終了
+   3. アーム停止  
+	  1. `ros2 run mqtt_teleop v2_both.sh stop`
+	  2. `ros2 run mqtt_teleop v2_both.sh disable`
+	  3. 電源off
 
 ## 構成
 
