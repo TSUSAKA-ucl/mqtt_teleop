@@ -2,7 +2,7 @@
 if [ "$0" = "-bash" ]; then
     _v2_both_completion() {
 	local v2cmd
-	v2cmd=(enable disable go_zero joint reset stop read_joint)
+	v2cmd=(enable disable go_zero joint reset stop read_joint enable_gripper gripper_states)
 	local cur prev opts
 	cur="${COMP_WORDS[COMP_CWORD]}"
 	prev="${COMP_WORDS[COMP_CWORD-1]}"

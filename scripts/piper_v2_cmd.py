@@ -106,10 +106,80 @@ def read_joint_in_degree(piper):
         print(joints)
         time.sleep(0.005)
 
+# import time
+# from piper_sdk import *
+
+# piper = C_PiperInterface_V2("can0")
+# piper.ConnectPort()
+
+# # 1. アームをEnable
+# while not piper.EnablePiper():
+#     time.sleep(0.01)
+
+# # 2. グリッパーをDisable（状態を明示）
+# piper.GripperCtrl(0, 1000, 0x02, 0)
+# time.sleep(0.1)
+
+# # 3. グリッパーをEnable
+# piper.GripperCtrl(0, 1000, 0x01, 0)
+# time.sleep(0.1)
+
+# # 4. グリッパーの状態を確認
+# print(piper.GetArmGripperMsgs())
+
+# # 5. グリッパーを開く（50mm）
+# piper.GripperCtrl(50000, 1000, 0x01, 0)
+# time.sleep(1)
+
+# # 6. グリッパーを閉じる
+# piper.GripperCtrl(0, 1000, 0x01, 0)
+
+# piper.GetArmGripperMsgs()の戻り値
+# enableにしたあと
+# ここの driver_enable_statusを確認する
+# Returns
+# -------
+# time_stamp : float
+#   time stamp
+# Hz : float
+#   msg fps
+# gripper_state : ArmMsgFeedBackGripper
+
+#   - grippers_angle (int): The stroke of the gripper (in 0.001 mm).
+#   - grippers_effort (int): The torque of the gripper (in 0.001 N·m).
+#   - foc_status (int):  The status code of the gripper.
+#   {
+#       * voltage_too_low (bool): Power voltage low (False: Normal, True: Low)
+#       * motor_overheating (bool): Motor over-temperature (False: Normal, True: Over-temperature)
+#       * driver_overcurrent (bool): Driver over-current (False: Normal, True: Over-current)
+#       * driver_overheating (bool): Driver over-temperature (False: Normal, True: Over-temperature)
+#       * sensor_status (bool): Sensor status (False: Normal, True: Abnormal)
+#       * driver_error_status (bool): Driver error status (False: Normal, True: Error)
+#       * driver_enable_status (bool): Driver enable status (False: Disabled, True: Enabled)
+#       * homing_status (bool): Zeroing status (False: Not zeroed, True: Zeroed or previously zeroed)
+#   }
+
+
+def gripper_enable(piper):
+    while( not piper.EnablePiper()):
+        time.sleep(0.01)
+    # piper.GripperCtrl(0,1000,0x02, 0)
+    # 3. グリッパーをEnable
+    gripper_enable_status = False
+    while not gripper_enable_status:
+        piper.GripperCtrl(0, 1000, 0x01, 0)
+        gripper_msgs = piper.GetArmGripperMsgs()
+        print(gripper_msgs)
+        # print(gripper_msgs.gripper_state.foc_status.driver_enable_status)
+        gripper_enable_status = gripper_msgs.gripper_state.foc_status.driver_enable_status
+        time.sleep(0.1)
+
+def gripper_states(piper):
+    print(piper.GetArmGripperMsgs())
 
 def main():
     parser = argparse.ArgumentParser(description="Piper Control")
-    parser.add_argument("command", choices=["enable", "disable", "go_zero", "joint", "reset", "stop", "read_joint"], help="Control command")
+    parser.add_argument("command", choices=["enable", "disable", "go_zero", "joint", "reset", "stop", "read_joint", "enable_gripper", "gripper_states"], help="Control command")
     parser.add_argument("--can_port", "-c", type=str, default=None, help="CAN port for PiPER (default: can0)")
     parser.add_argument(
         "-r", "--right_arm", action="store_true",
@@ -150,10 +220,11 @@ def main():
         ctrl_stop(piper)
     elif args.command == "read_joint":
         read_joint_in_degree(piper)
-
+    elif args.command == "enable_gripper":
+        gripper_enable(piper)
+    elif args.command == "gripper_states":
+        gripper_states(piper)
 
 
 if __name__ == "__main__":
     main()
-
-

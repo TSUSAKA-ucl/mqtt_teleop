@@ -125,11 +125,11 @@ public:
 
     cmd_arm_.name = p_.joint_names;
     cmd_arm_.position.assign(kNJ, 0.0);
-    cmd_arm_.effort.assign(kNJ, 0.0);
+    // cmd_arm_.effort.assign(kNJ, 0.0);
     cmd_full_ = cmd_arm_;
     cmd_full_.name.push_back(p_.gripper_name);
     cmd_full_.position.push_back(0.0);
-    cmd_full_.effort.push_back(p_.gripper_effort);
+    // cmd_full_.effort.push_back(p_.gripper_effort);
 
     if (p_.state_pub_rate_hz > 0.0) {
       state_timer_ = create_wall_timer(
