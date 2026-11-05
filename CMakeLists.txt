@@ -38,6 +38,7 @@ install(TARGETS teleop_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
 ament_python_install_package(venv_utils)
 install(PROGRAMS
+	scripts/can-up.sh
 	scripts/piper_v2_cmd.py scripts/v2_both.sh
 	scripts/piper_metawork.sh
 	DESTINATION lib/${PROJECT_NAME})

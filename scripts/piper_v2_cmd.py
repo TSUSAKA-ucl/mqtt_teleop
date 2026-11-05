@@ -39,6 +39,18 @@ def ctrl_go_zero(piper):
     piper.GripperCtrl(abs(joint_6), 1000, 0x01, 0)
 
 
+def ctrl_go_zero_move_gripper(piper):
+    ctrl_go_zero(piper)
+    range_close = 0
+    range_open = abs(round(0.05*1000*1000)) # 0.05m
+    count = 0
+    while count < 2:
+        count = count + 1
+        piper.GripperCtrl(range_open, 1000, 0x01, 0)
+        time.sleep(1)
+        piper.GripperCtrl(range_close, 1000, 0x01, 0)
+        time.sleep(1)
+
 def ctrl_joint(piper):
     piper.GripperCtrl(0,1000,0x01, 0)
     factor = 57295.7795 #1000*180/3.1415926
@@ -167,6 +179,8 @@ def gripper_enable(piper):
     # 3. グリッパーをEnable
     gripper_enable_status = False
     while not gripper_enable_status:
+        piper.GripperCtrl(0,1000,0x02, 0)
+        time.sleep(0.1)
         piper.GripperCtrl(0, 1000, 0x01, 0)
         gripper_msgs = piper.GetArmGripperMsgs()
         print(gripper_msgs)
@@ -179,7 +193,18 @@ def gripper_states(piper):
 
 def main():
     parser = argparse.ArgumentParser(description="Piper Control")
-    parser.add_argument("command", choices=["enable", "disable", "go_zero", "joint", "reset", "stop", "read_joint", "enable_gripper", "gripper_states"], help="Control command")
+    parser.add_argument("command", choices=["enable",
+                                            "disable",
+                                            "go_zero",
+                                            "joint",
+                                            "reset",
+                                            "stop",
+                                            "read_joint",
+                                            "enable_gripper",
+                                            "gripper_states",
+                                            "go_zero_move_gripper"
+                                            ],
+                        help="Control command")
     parser.add_argument("--can_port", "-c", type=str, default=None, help="CAN port for PiPER (default: can0)")
     parser.add_argument(
         "-r", "--right_arm", action="store_true",
@@ -224,6 +249,8 @@ def main():
         gripper_enable(piper)
     elif args.command == "gripper_states":
         gripper_states(piper)
+    elif args.command == "go_zero_move_gripper":
+        ctrl_go_zero_move_gripper(piper)
 
 
 if __name__ == "__main__":
