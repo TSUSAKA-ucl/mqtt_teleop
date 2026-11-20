@@ -89,6 +89,12 @@ def generate_launch_description():
         description='Publishing rate for the AGX Arm node.'
     )
 
+    status_rate_arg = DeclareLaunchArgument(
+        'status_rate',
+        default_value='2.0',
+        description='Publishing rate in Hz for diagnostic status topics.'
+    )
+
     enable_timeout_arg = DeclareLaunchArgument(
         'enable_timeout',
         default_value='5.0',
@@ -128,6 +134,7 @@ def generate_launch_description():
         parameters=[{
             'can_port': LaunchConfiguration('can_port'),
             'pub_rate': LaunchConfiguration('pub_rate'),
+            'status_rate': LaunchConfiguration('status_rate'),
             'auto_enable': LaunchConfiguration('auto_enable'),
             'fast_mode': LaunchConfiguration('fast_mode'),
             'arm_type': LaunchConfiguration('arm_type'),
@@ -184,6 +191,7 @@ def generate_launch_description():
         speed_percent_arg,
         fw_version_arg,
         pub_rate_arg,
+        status_rate_arg,
         enable_timeout_arg,
         tcp_offset_arg,
         gripper_default_effort_arg,
